@@ -31,6 +31,7 @@ class LIBEROEnvWrapper():
         self.t = 0
 
     def get_env(self, task_idx):
+        # Sets up the libero env
         self.task = self.task_suite.get_task(task_idx)
         self.task_description = self.task.language
         self.task_bddl_file = os.path.join(get_libero_path("bddl_files"), self.task.problem_folder, self.task.bddl_file)
