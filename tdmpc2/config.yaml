@@ -6,6 +6,8 @@ task_suite: libero_spatial
 task_id: 0
 obs: rgb
 
+path_to_dir: /path_to_dir
+
 # other
 task: libero_task
 eval_vid_directory: extra_success_data

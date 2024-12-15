@@ -86,8 +86,9 @@ def train(cfg: dict):
 	train_buffer = Buffer(cfg)
 
 	if cfg.task == "libero_task" and not cfg.multitask:
-		hdf5_directory_name = f"../LIBERO/libero/datasets/{cfg.task_suite}"
+		hdf5_directory_name = f"{cfg.path_to_dir}/LIBERO/libero/datasets/{cfg.task_suite}"
 		task_name = env.task.name
+
 		filename = f"{hdf5_directory_name}/{task_name}_extra_data_500.hdf5"
 
 		print(f"\nLoading demos from {filename} into buffer!\n")
