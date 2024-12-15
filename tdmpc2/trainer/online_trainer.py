@@ -9,11 +9,14 @@ from tensordict.tensordict import TensorDict
 from trainer.base import Trainer
 
 def print_progress_bar(iteration, total, length=40):
-    percent = (iteration / total)
-    filled_length = int(length * percent)
-    bar = '█' * filled_length + '-' * (length - filled_length)
-    sys.stdout.write(f'\r|{bar}| {percent:.2%}')
-    sys.stdout.flush()
+	'''
+	Print progress bar for offline training
+	'''
+	percent = (iteration / total)
+	filled_length = int(length * percent)
+	bar = '█' * filled_length + '-' * (length - filled_length)
+	sys.stdout.write(f'\r|{bar}| {percent:.2%}')
+	sys.stdout.flush()
 
 class OnlineTrainer(Trainer):
 	"""Trainer class for single-task online TD-MPC2 training."""
@@ -44,12 +47,13 @@ class OnlineTrainer(Trainer):
 			while not done:
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
-				for i in range(0, obs.shape[0], 3):
-					image = obs[i:i+3].numpy()
-					flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
-					resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
-					cv2.imshow('Images', resized_image)
-					cv2.waitKey(1)
+				if self.show_images:
+					for i in range(0, obs.shape[0], 3):
+						image = obs[i:i+3].numpy()
+						flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
+						resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
+						cv2.imshow('Images', resized_image)
+						cv2.waitKey(1)
 				self.count_debug += 1
 				ep_reward += reward
 				t += 1
@@ -119,12 +123,13 @@ class OnlineTrainer(Trainer):
 					self._ep_idx = self.buffer.add(torch.cat(self._tds))
 
 				obs = self.env.reset()
-				for i in range(0, obs.shape[0], 3):
-					image = obs[i:i+3].numpy()
-					flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
-					resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
-					cv2.imshow('Images', resized_image)
-					cv2.waitKey(1)
+				if self.show_images:
+					for i in range(0, obs.shape[0], 3):
+						image = obs[i:i+3].numpy()
+						flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
+						resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
+						cv2.imshow('Images', resized_image)
+						cv2.waitKey(1)
 				self._tds = [self.to_td(obs)]
 
 			# Collect experience
@@ -133,12 +138,13 @@ class OnlineTrainer(Trainer):
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
-			for i in range(0, obs.shape[0], 3):
-				image = obs[i:i+3].numpy()
-				flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
-				resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
-				cv2.imshow('Images', resized_image)
-				cv2.waitKey(1)
+			if self.show_images:
+				for i in range(0, obs.shape[0], 3):
+					image = obs[i:i+3].numpy()
+					flipped_image = cv2.flip(cv2.cvtColor(np.transpose(image, (1, 2, 0)), cv2.COLOR_BGR2RGB), 0)
+					resized_image = cv2.resize(flipped_image, (512, 512), interpolation=cv2.INTER_AREA)
+					cv2.imshow('Images', resized_image)
+					cv2.waitKey(1)
 			self._tds.append(self.to_td(obs, action, reward))
 
 			# Update agent

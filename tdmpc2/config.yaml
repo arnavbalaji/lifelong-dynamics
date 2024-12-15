@@ -9,6 +9,7 @@ obs: rgb
 # other
 task: libero_task
 eval_vid_directory: extra_success_data
+show_images: false
 
 # evaluation
 checkpoint: ???

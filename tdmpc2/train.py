@@ -26,25 +26,15 @@ from collections import deque
 
 torch.backends.cudnn.benchmark = True
 
-# def to_td(obs, action, reward):
-# 	"""Creates a TensorDict for a new episode."""
-# 	if isinstance(obs, dict):
-# 		obs = TensorDict(obs, batch_size=(), device='cpu')
-# 	else:
-# 		obs = obs.unsqueeze(0).cpu()
-# 	td = TensorDict(dict(
-# 		obs=obs,
-# 		action=action.unsqueeze(0),
-# 		reward=reward.unsqueeze(0),
-# 	), batch_size=(1,))
-# 	return td
-
 def print_progress_bar(iteration, total, length=40):
-    percent = (iteration / total)
-    filled_length = int(length * percent)
-    bar = '█' * filled_length + '-' * (length - filled_length)
-    sys.stdout.write(f'\r|{bar}| {percent:.2%}')
-    sys.stdout.flush()
+	'''
+	Prints progress bar. Used when loading in demos to buffer. 
+	'''
+	percent = (iteration / total)
+	filled_length = int(length * percent)
+	bar = '█' * filled_length + '-' * (length - filled_length)
+	sys.stdout.write(f'\r|{bar}| {percent:.2%}')
+	sys.stdout.flush()
 
 def to_td(obs, action=None, reward=None, dummy_action=None):
 	"""Creates a TensorDict for a new episode."""
@@ -90,25 +80,20 @@ def train(cfg: dict):
 	set_seed(cfg.seed)
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)
 	
-	cfg.multitask = False
+	cfg.multitask = False # Running offline-online training
 	trainer_cls = OfflineTrainer if cfg.multitask else OnlineTrainer
-	if cfg.multitask:
-		print("\n\nMULTITASK\n\n")
-	else:
-		print("\n\nNOT MULTITASK\n\n")
 	env = make_env(cfg)
 	train_buffer = Buffer(cfg)
 
 	if cfg.task == "libero_task" and not cfg.multitask:
-		hdf5_directory_name = f"/home/arpit/projects/tdmpc2/LIBERO/libero/datasets/{cfg.task_suite}"
+		hdf5_directory_name = f"../LIBERO/libero/datasets/{cfg.task_suite}"
 		task_name = env.task.name
-		filename = f"{hdf5_directory_name}/{task_name}_extra_data_5000.hdf5"
+		filename = f"{hdf5_directory_name}/{task_name}_extra_data_500.hdf5"
 
-		# filename = f"{hdf5_directory_name}/{task_name}_extra_data_only_success2.hdf5"
-
-		print(f"\nLoading success data from {filename} into buffer!\n")
+		print(f"\nLoading demos from {filename} into buffer!\n")
 		transform = torchvision.transforms.Resize((64, 64))
 		with h5py.File(filename) as file:
+			# Loading demonstration into buffer
 			data = file["data"]
 			num_demos = len(list(data.items()))
 			iteration = 1
@@ -136,16 +121,13 @@ def train(cfg: dict):
 				print_progress_bar(iteration, num_demos)
 				iteration += 1
 
-	cfg.buffer_size = 100_000 # Smaller buffer size for online finetuning
-
 	trainer = trainer_cls(
 		cfg=cfg,
 		env=env,
 		agent=TDMPC2(cfg),
 		buffer=train_buffer,
-		# buffer=Buffer(cfg),
 		logger=Logger(cfg),
-		# offline_buffer=train_buffer
+		show_images=cfg.show_images
 	)
 	trainer.train()
 	print('\nTraining completed successfully')
