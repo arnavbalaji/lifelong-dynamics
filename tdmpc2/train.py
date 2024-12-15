@@ -135,27 +135,6 @@ def train(cfg: dict):
 				train_buffer.add(torch.cat(tds))
 				print_progress_bar(iteration, num_demos)
 				iteration += 1
-				# demo_images = torchvision.transforms.functional.rgb_to_grayscale(transform(demo_images), 1).squeeze(1)
-
-				# tds = []
-				# context_length = 9
-				# for i in range(demo_actions.shape[0]):
-				# 	start_index = max(0, i - context_length + 1)
-				# 	end_index = i + 1
-				# 	current_obs = demo_images[start_index:end_index]
-				# 	pad_length = context_length - current_obs.shape[0]
-				# 	if pad_length > 0:
-				# 		if i < context_length - 1:
-				# 			# Pad with the first observation
-				# 			padding = demo_images[0].unsqueeze(0).repeat(pad_length, 1, 1)
-				# 			current_obs = torch.cat([padding, current_obs], dim=0)
-				# 		else:
-				# 			# Pad with the last observation
-				# 			padding = demo_actions[-1].unsqueeze(0).repeat(pad_length, 1, 1)
-				# 			current_obs = torch.cat([current_obs, padding], dim=0)
-					# tds.append(to_td(current_obs, demo_actions[i].to(torch.float32), demo_rewards[i].to(torch.float32)))
-					
-				# train_buffer.add(torch.cat(tds))
 
 	cfg.buffer_size = 100_000 # Smaller buffer size for online finetuning
 

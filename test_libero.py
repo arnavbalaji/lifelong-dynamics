@@ -7,7 +7,7 @@ import h5py
 from libero.libero import benchmark, get_libero_path, set_libero_default_path
 from libero.libero.envs import OffScreenRenderEnv
 
-set_libero_default_path("/home/arpit/projects/tdmpc2/LIBERO/libero/libero")
+set_libero_default_path("/home/arpit/projects/lifelong-dynamics/LIBERO/libero/libero")
 
 benchmark_dict = benchmark.get_benchmark_dict()
 print(benchmark_dict)
