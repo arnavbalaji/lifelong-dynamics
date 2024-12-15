@@ -93,7 +93,6 @@ def make_env(cfg):
 	print(f"\ncfg.multitask = {cfg.multitask}\n")
 	if cfg.multitask:
 		# env = make_multitask_env(cfg)
-		print("\nYO\n")
 		env = make_libero_multitask_env(cfg)
 
 	else:
@@ -103,7 +102,6 @@ def make_env(cfg):
 				env = make_libero_env(cfg)
 			except:
 				pass
-			# env = make_libero_env(cfg)
 		else:
 			for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env]:
 				try:

@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import cv2
 import gym
+import random
 
 from libero.libero import benchmark, get_libero_path, set_libero_default_path
 from libero.libero.envs import OffScreenRenderEnv
@@ -10,9 +11,12 @@ from libero.libero.envs import OffScreenRenderEnv
 task_suites = ["libero_object", "libero_spatial", "libero_goal", "libero_10", "libero_90", "libero_100"]
 
 class LIBEROEnvWrapper():
+    '''
+    TD-MPC2 Wrapper for LIBERO env
+    '''
     def __init__(self, cfg):
         self.cfg = cfg
-        self.max_episode_steps = 200
+        self.max_episode_steps = cfg.episode_length
         self.benchmark_dict = benchmark.get_benchmark_dict()
         self.task_suite = self.benchmark_dict[cfg.task_suite]()
         self.task_id = cfg.task_id
@@ -32,9 +36,6 @@ class LIBEROEnvWrapper():
         self.task_bddl_file = os.path.join(get_libero_path("bddl_files"), self.task.problem_folder, self.task.bddl_file)
         print(f"[info] retrieving task {self.task_id} from suite {self.cfg.task_suite}, the " + \
             f"language instruction is {self.task_description}, and the bddl file is {self.task_bddl_file}")
-        
-        self.hdf5_filename = f"/home/arpit/projects/tdmpc2/LIBERO/libero/datasets/libero_spatial/{self.task.name}_demo.hdf5"
-        print(f"HDF5 Filename: {self.hdf5_filename}")
 
         self.env_args = {
             "has_renderer" : True,
@@ -56,6 +57,11 @@ class LIBEROEnvWrapper():
 
     def reset(self, **kwargs):
         self.t = 0
+        # Resetting the init state first
+        self.env.reset()
+        self.init_state_id = random.randint(0, 49) # Getting random init state
+        self.env.set_init_state(self.init_states[self.init_state_id])
+
         self.env.reset()
         dummy_action = [0.] * 7
         for _ in range(10):
