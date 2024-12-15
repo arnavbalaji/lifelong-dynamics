@@ -1,4 +1,4 @@
-name: tdmpc2
+name: lifelong-dynamics
 channels:
   - pytorch-nightly
   - nvidia
