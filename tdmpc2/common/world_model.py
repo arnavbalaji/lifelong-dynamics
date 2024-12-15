@@ -41,8 +41,8 @@ class WorldModel(nn.Module):
 		Overriding `to` method to also move additional tensors to device.
 		"""
 		super().to(*args, **kwargs)
-		if self.cfg.multitask:
-			self._action_masks = self._action_masks.to(*args, **kwargs)
+		# if self.cfg.multitask:
+		# 	self._action_masks = self._action_masks.to(*args, **kwargs)
 		self.log_std_min = self.log_std_min.to(*args, **kwargs)
 		self.log_std_dif = self.log_std_dif.to(*args, **kwargs)
 		return self
@@ -63,9 +63,9 @@ class WorldModel(nn.Module):
 		"""
 		for p in self._Qs.parameters():
 			p.requires_grad_(mode)
-		if self.cfg.multitask:
-			for p in self._task_emb.parameters():
-				p.requires_grad_(mode)
+		# if self.cfg.multitask:
+		# 	for p in self._task_emb.parameters():
+		# 		p.requires_grad_(mode)
 
 	def soft_update_target_Q(self):
 		"""
@@ -95,8 +95,8 @@ class WorldModel(nn.Module):
 		Encodes an observation into its latent representation.
 		This implementation assumes a single state-based observation.
 		"""
-		if self.cfg.multitask:
-			obs = self.task_emb(obs, task)
+		# if self.cfg.multitask:
+		# 	obs = self.task_emb(obs, task)
 		if self.cfg.obs == 'rgb' and obs.ndim == 5:
 			return torch.stack([self._encoder[self.cfg.obs](o) for o in obs])
 		return self._encoder[self.cfg.obs](obs)
@@ -105,8 +105,8 @@ class WorldModel(nn.Module):
 		"""
 		Predicts the next latent state given the current latent state and action.
 		"""
-		if self.cfg.multitask:
-			z = self.task_emb(z, task)
+		# if self.cfg.multitask:
+		# 	z = self.task_emb(z, task)
 		z = torch.cat([z, a], dim=-1)
 		return self._dynamics(z)
 	
@@ -114,8 +114,8 @@ class WorldModel(nn.Module):
 		"""
 		Predicts instantaneous (single-step) reward.
 		"""
-		if self.cfg.multitask:
-			z = self.task_emb(z, task)
+		# if self.cfg.multitask:
+		# 	z = self.task_emb(z, task)
 		z = torch.cat([z, a], dim=-1)
 		return self._reward(z)
 
@@ -125,21 +125,22 @@ class WorldModel(nn.Module):
 		The policy prior is a Gaussian distribution with
 		mean and (log) std predicted by a neural network.
 		"""
-		if self.cfg.multitask:
-			z = self.task_emb(z, task)
+		# if self.cfg.multitask:
+		# 	z = self.task_emb(z, task)
 
 		# Gaussian policy prior
 		mu, log_std = self._pi(z).chunk(2, dim=-1)
 		log_std = math.log_std(log_std, self.log_std_min, self.log_std_dif)
 		eps = torch.randn_like(mu)
 
-		if self.cfg.multitask: # Mask out unused action dimensions
-			mu = mu * self._action_masks[task]
-			log_std = log_std * self._action_masks[task]
-			eps = eps * self._action_masks[task]
-			action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
-		else: # No masking
-			action_dims = None
+		# if self.cfg.multitask: # Mask out unused action dimensions
+		# 	mu = mu * self._action_masks[task]
+		# 	log_std = log_std * self._action_masks[task]
+		# 	eps = eps * self._action_masks[task]
+		# 	action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
+		# else: # No masking
+		# 	action_dims = None
+		action_dims = None # TAKE THIS OUT LATER
 
 		log_pi = math.gaussian_logprob(eps, log_std, size=action_dims)
 		pi = mu + eps * log_std.exp()
@@ -158,9 +159,8 @@ class WorldModel(nn.Module):
 		"""
 		assert return_type in {'min', 'avg', 'all'}
 
-		if self.cfg.multitask:
-			z = self.task_emb(z, task)
-			
+		# if self.cfg.multitask:
+		# 	z = self.task_emb(z, task)
 		z = torch.cat([z, a], dim=-1)
 		out = (self._target_Qs if target else self._Qs)(z)
 
@@ -170,3 +170,9 @@ class WorldModel(nn.Module):
 		Q1, Q2 = out[np.random.choice(self.cfg.num_q, 2, replace=False)]
 		Q1, Q2 = math.two_hot_inv(Q1, self.cfg), math.two_hot_inv(Q2, self.cfg)
 		return torch.min(Q1, Q2) if return_type == 'min' else (Q1 + Q2) / 2
+	
+	def Q_uncertainty(self, z, a, target=False):
+		z = torch.cat([z, a], dim=-1)
+		out = (self._target_Qs if target else self._Qs)(z)
+		values = torch.cat([math.two_hot_inv(Q_val, self.cfg).unsqueeze(0) for Q_val in out])
+		return torch.std(values, dim=0)

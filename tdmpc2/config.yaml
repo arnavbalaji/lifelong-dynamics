@@ -1,9 +1,14 @@
 defaults:
     - override hydra/launcher: submitit_local
 
-# environment
-task: dog-run
-obs: state
+# libero environment
+task_suite: libero_spatial
+task_id: 0
+obs: rgb
+
+# other
+task: libero_task
+eval_vid_directory: extra_success_data
 
 # evaluation
 checkpoint: ???
@@ -11,7 +16,7 @@ eval_episodes: 10
 eval_freq: 50000
 
 # training
-steps: 10_000_000
+steps: 1_000_000
 batch_size: 256
 reward_coef: 0.1
 value_coef: 0.1
@@ -60,29 +65,30 @@ task_dim: 96
 num_q: 5
 dropout: 0.01
 simnorm_dim: 8
+uncertainty_cost: 1
 
 # logging
-wandb_project: ???
-wandb_entity: ???
+wandb_project: single-task-test
+wandb_entity: fri-lifelong-dynamics
 wandb_silent: false
 disable_wandb: true
 save_csv: true
 
 # misc
-save_video: true
+save_video: false
 save_agent: true
 seed: 1
 
 # convenience
 work_dir: ???
 task_title: ???
-multitask: ???
+multitask: True
 tasks: ???
 obs_shape: ???
 action_dim: ???
-episode_length: ???
+episode_length: 500
 obs_shapes: ???
 action_dims: ???
 episode_lengths: ???
-seed_steps: ???
+seed_steps: 100
 bin_size: ???

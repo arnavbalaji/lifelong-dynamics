@@ -27,8 +27,8 @@ class PixelWrapper(gym.Wrapper):
 		self._frames.append(frame)
 		return torch.from_numpy(np.concatenate(self._frames))
 
-	def reset(self):
-		self.env.reset()
+	def reset(self, task_idx=None):
+		self.env.reset(task_idx)
 		for _ in range(self._frames.maxlen):
 			obs = self._get_obs()
 		return obs

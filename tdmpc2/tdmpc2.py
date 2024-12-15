@@ -23,15 +23,17 @@ class TDMPC2:
 			{'params': self.model._dynamics.parameters()},
 			{'params': self.model._reward.parameters()},
 			{'params': self.model._Qs.parameters()},
-			{'params': self.model._task_emb.parameters() if self.cfg.multitask else []}
+			# {'params': self.model._task_emb.parameters() if self.cfg.multitask else []}
+			{"params": []} # TAKE THIS OUT
 		], lr=self.cfg.lr)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr, eps=1e-5)
 		self.model.eval()
 		self.scale = RunningScale(cfg)
 		self.cfg.iterations += 2*int(cfg.action_dim >= 20) # Heuristic for large action spaces
-		self.discount = torch.tensor(
-			[self._get_discount(ep_len) for ep_len in cfg.episode_lengths], device='cuda'
-		) if self.cfg.multitask else self._get_discount(cfg.episode_length)
+		# self.discount = torch.tensor(
+		# 	[self._get_discount(ep_len) for ep_len in cfg.episode_lengths], device='cuda'
+		# ) if self.cfg.multitask else self._get_discount(cfg.episode_length)
+		self.discount = self._get_discount(cfg.episode_length)
 
 	def _get_discount(self, episode_length):
 		"""
@@ -96,11 +98,18 @@ class TDMPC2:
 		"""Estimate value of a trajectory starting at latent state z and executing given actions."""
 		G, discount = 0, 1
 		for t in range(self.cfg.horizon):
+			if self.cfg.uncertainty_cost > 0:
+				G -= discount * self.cfg.uncertainty_cost * self.model.Q_uncertainty(z, actions[t])
 			reward = math.two_hot_inv(self.model.reward(z, actions[t], task), self.cfg)
 			z = self.model.next(z, actions[t], task)
 			G += discount * reward
-			discount *= self.discount[torch.tensor(task)] if self.cfg.multitask else self.discount
-		return G + discount * self.model.Q(z, self.model.pi(z, task)[1], task, return_type='avg')
+			# discount *= self.discount[torch.tensor(task)] if self.cfg.multitask else self.discount
+			discount *= self.discount
+		pi = self.model.pi(z, task)[1]
+		G += discount * self.model.Q(z, pi, task, return_type='avg')
+		if self.cfg.uncertainty_cost > 0:
+			G -= discount * self.cfg.uncertainty_cost * self.model.Q_uncertainty(z, pi)
+		return G
 
 	@torch.no_grad()
 	def plan(self, z, t0=False, eval_mode=False, task=None):
@@ -142,8 +151,8 @@ class TDMPC2:
 			actions[:, self.cfg.num_pi_trajs:] = (mean.unsqueeze(1) + std.unsqueeze(1) * \
 				torch.randn(self.cfg.horizon, self.cfg.num_samples-self.cfg.num_pi_trajs, self.cfg.action_dim, device=std.device)) \
 				.clamp(-1, 1)
-			if self.cfg.multitask:
-				actions = actions * self.model._action_masks[task]
+			# if self.cfg.multitask:
+			# 	actions = actions * self.model._action_masks[task]
 
 			# Compute elite actions
 			value = self._estimate_value(z, actions, task).nan_to_num_(0)
@@ -157,9 +166,9 @@ class TDMPC2:
 			mean = torch.sum(score.unsqueeze(0) * elite_actions, dim=1) / (score.sum(0) + 1e-9)
 			std = torch.sqrt(torch.sum(score.unsqueeze(0) * (elite_actions - mean.unsqueeze(1)) ** 2, dim=1) / (score.sum(0) + 1e-9)) \
 				.clamp_(self.cfg.min_std, self.cfg.max_std)
-			if self.cfg.multitask:
-				mean = mean * self.model._action_masks[task]
-				std = std * self.model._action_masks[task]
+			# if self.cfg.multitask:
+			# 	mean = mean * self.model._action_masks[task]
+			# 	std = std * self.model._action_masks[task]
 
 		# Select action
 		score = score.squeeze(1).cpu().numpy()
@@ -212,7 +221,8 @@ class TDMPC2:
 			torch.Tensor: TD-target.
 		"""
 		pi = self.model.pi(next_z, task)[1]
-		discount = self.discount[task].unsqueeze(-1) if self.cfg.multitask else self.discount
+		# discount = self.discount[task].unsqueeze(-1) if self.cfg.multitask else self.discount
+		discount = self.discount # TAKE THIS OUT LATER
 		return reward + discount * self.model.Q(next_z, pi, task, return_type='min', target=True)
 
 	def update(self, buffer):

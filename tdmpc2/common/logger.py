@@ -107,6 +107,7 @@ class Logger:
 
 	def __init__(self, cfg):
 		self._log_dir = make_dir(cfg.work_dir)
+		print(self._log_dir)
 		self._model_dir = make_dir(self._log_dir / "models")
 		self._save_csv = cfg.save_csv
 		self._save_agent = cfg.save_agent
@@ -126,15 +127,33 @@ class Logger:
 		os.environ["WANDB_SILENT"] = "true" if cfg.wandb_silent else "false"
 		import wandb
 
+		# Modified version:
+		config_dict = OmegaConf.to_container(cfg, resolve=True)
+		# Convert any problematic types to basic Python types
+		config_dict = {
+			k: v if isinstance(v, (int, float, str, bool, list, dict)) 
+			else str(v) for k, v in config_dict.items()
+		}
+
 		wandb.init(
 			project=self.project,
 			entity=self.entity,
 			name=str(cfg.seed),
 			group=self._group,
 			tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
-			dir=self._log_dir,
-			config=OmegaConf.to_container(cfg, resolve=True),
+			dir=str(self._log_dir),  # Ensure directory is string
+			config=config_dict,
 		)
+
+		# wandb.init(
+		# 	project=self.project,
+		# 	entity=self.entity,
+		# 	name=str(cfg.seed),
+		# 	group=self._group,
+		# 	tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
+		# 	dir=self._log_dir,
+		# 	config=OmegaConf.to_container(cfg, resolve=True),
+		# )
 		print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
 		self._wandb = wandb
 		self._video = (
