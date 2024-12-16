@@ -6,6 +6,8 @@ import torch.nn as nn
 from common import layers, math, init
 from tensordict import TensorDict
 from tensordict.nn import TensorDictParams
+from roberta import roberta
+
 
 class WorldModel(nn.Module):
 	"""
@@ -17,11 +19,11 @@ class WorldModel(nn.Module):
 		super().__init__()
 		self.cfg = cfg
 		if cfg.multitask:
-			self._task_emb = nn.Embedding(len(cfg.tasks), cfg.task_dim, max_norm=1)
+            self._task_emb = RobertaEmbedder(embedding_length=cfg.task_dim)
 			self.register_buffer("_action_masks", torch.zeros(len(cfg.tasks), cfg.action_dim))
 			for i in range(len(cfg.tasks)):
 				self._action_masks[i, :cfg.action_dims[i]] = 1.
-		self._encoder = layers.enc(cfg)
+        self._encoder = layers.enc(cfg)
 		self._dynamics = layers.mlp(cfg.latent_dim + cfg.action_dim + cfg.task_dim, 2*[cfg.mlp_dim], cfg.latent_dim, act=layers.SimNorm(cfg))
 		self._reward = layers.mlp(cfg.latent_dim + cfg.action_dim + cfg.task_dim, 2*[cfg.mlp_dim], max(cfg.num_bins, 1))
 		self._pi = layers.mlp(cfg.latent_dim + cfg.task_dim, 2*[cfg.mlp_dim], 2*cfg.action_dim)
@@ -86,23 +88,22 @@ class WorldModel(nn.Module):
 		"""
 		if isinstance(task, int):
 			task = torch.tensor([task], device=x.device)
-		emb = self._task_emb(task.long())
-		if x.ndim == 3:
-			emb = emb.unsqueeze(0).repeat(x.shape[0], 1, 1)
-		elif emb.shape[0] == 1:
-			emb = emb.repeat(x.shape[0], 1)
-		return torch.cat([x, emb], dim=-1)
+        emb = self._task_emb([libero_task_map["libero_10"][task]])
+        if x.ndim == 3:
+            emb = emb.unsqueeze(0).repeat(x.shape[0], 1, 1)
+        elif emb.shape[0] == 1:
+            emb = emb.repeat(x.shape[0], 1)
+        return torch.cat([x, emb], dim=-1)
 
-	def encode(self, obs, task):
-		"""
-		Encodes an observation into its latent representation.
-		This implementation assumes a single state-based observation.
-		"""
-		if self.cfg.multitask:
-			obs = self.task_emb(obs, task)
-		if self.cfg.obs == 'rgb' and obs.ndim == 5:
-			return torch.stack([self._encoder[self.cfg.obs](o) for o in obs])
-		return self._encoder[self.cfg.obs](obs)
+    def encode(self, obs, task):
+        """
+        Encodes an observation into its latent representation.
+        This implementation assumes a single state-based observation.
+        """
+        z = self._encoder[self.cfg.obs](obs)
+        if self.cfg.multitask:
+            z = self.task_emb(z, task)
+        return z
 
 	def next(self, z, a, task):
 		"""
