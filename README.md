@@ -1,3 +1,47 @@
+## Installation instructions
+```
+git clone https://github.com/arnavbalaji/lifelong-dynamics.git
+cd lifelong-dynamics
+conda env create -f docker/environment.yaml
+conda activate lifelong-dynamics
+pip install gym==0.21.0
+git clone https://github.com/Lifelong-Robot-Learning/LIBERO.git
+cd LIBERO
+pip install -r requirements.txt
+pip uninstall robosuite
+pip install robosuite==1.4.1
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 (might have to change this based on the computer's GPU)
+pip install -e .
+python benchmark_scripts/download_libero_datasets.py --datasets libero_spatial
+```
+
+## Running TD-MPC2
+The main branch contains the primary changes to train on the LIBERO tasks, including scripts to load in the LIBERO environment, generate data, as well as training the model. To generate a small dataset of 100 demonstrations, run 
+
+```
+python generate_libero_data.py
+```
+
+In the zip file we have also provided an HDF5 file consisting of 100 demos, in case you do not wish to run this script. In that case, take the file and put it in the LIBERO/libero/datasets/libero_spatial/ directory, and then you can train the model with
+
+```
+python train.py path_to_dir=/path_to_lifelong_dynamics_directory
+```
+
+You can run it with the flag ```show_images=True``` to visualize the robot interacting with the environment in real time
+
+
+## RoBERTa Encoder
+Generate custom embeddings using the RoBERTa encoder by following these steps:
+
+1. Switch to the ```text-embedding``` branch
+2. Install the transformers library if you haven't already
+3. In the main() function, specify your custom task string when calling encode_texts()
+4. Run roberta.py to generate the embeddings
+
+The embeddings will be output once processing is complete.
+
+
 <h1>TD-MPC2</span></h1>
 
 Official implementation of
@@ -147,7 +191,3 @@ as well as the original TD-MPC paper:
 You are very welcome to contribute to this project. Feel free to open an issue or pull request if you have any suggestions or bug reports, but please review our [guidelines](CONTRIBUTING.md) first. Our goal is to build a codebase that can easily be extended to new environments and tasks, and we would love to hear about your experience!
 
 ----
-
-## License
-
-This project is licensed under the MIT License - see the `LICENSE` file for details. Note that the repository relies on third-party code, which is subject to their respective licenses.
