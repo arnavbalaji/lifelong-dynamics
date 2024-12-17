@@ -22,6 +22,8 @@ The main branch contains the primary changes to train on the LIBERO tasks, inclu
 python generate_libero_data.py
 ```
 
+To generate a larger dataset, specify the number of demos in the main function.
+
 Then, you can train the model with
 
 ```
