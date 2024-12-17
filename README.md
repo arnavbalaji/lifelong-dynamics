@@ -22,7 +22,7 @@ The main branch contains the primary changes to train on the LIBERO tasks, inclu
 python generate_libero_data.py
 ```
 
-To generate a larger dataset, specify the number of demos in the main function.
+To generate a larger dataset, specify the number of demos in the main function. In the case that you change the demo size, change [line 92](https://github.com/arnavbalaji/lifelong-dynamics/blob/main/tdmpc2/train.py#L92) of train.py, to have the correct filename. 
 
 Then, you can train the model with
 
