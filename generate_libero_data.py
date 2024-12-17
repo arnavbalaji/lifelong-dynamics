@@ -132,5 +132,5 @@ def generate_data(task_id=0, num_samples=500, show_images=False):
 
 if __name__ == "__main__":
     task_id = 0
-    num_samples = 200
+    num_samples = 100
     generate_data(task_id=task_id, num_samples=num_samples)
