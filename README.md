@@ -22,7 +22,7 @@ The main branch contains the primary changes to train on the LIBERO tasks, inclu
 python generate_libero_data.py
 ```
 
-In the zip file we have also provided an HDF5 file consisting of 100 demos, in case you do not wish to run this script. In that case, take the file and put it in the LIBERO/libero/datasets/libero_spatial/ directory, and then you can train the model with
+Then, you can train the model with
 
 ```
 python train.py path_to_dir=/path_to_lifelong_dynamics_directory
